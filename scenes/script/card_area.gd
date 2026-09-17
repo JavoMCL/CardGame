@@ -8,9 +8,11 @@ extends Node2D
 const VALOR_ESPECIAL_TRIO_FIGURAS := 30 # ajustar segun la regla real
 
 var cartas: Array = [] # cada elemento es [palo, valor]
+var carta_extra_pendiente: Array = []
 
 func recibir_cartas(c1: Array, c2: Array) -> void:
 	cartas.clear()
+	carta_extra_pendiente = []
 	cartas.append(c1)
 	cartas.append(c2)
 
@@ -28,6 +30,15 @@ func agregar_carta_extra(c3: Array) -> void:
 	cartas.append(c3)
 	carta3.visible = true
 	carta3.mostrar(c3[0], c3[1])
+
+func decidir_carta_extra(c3: Array) -> void:
+	carta_extra_pendiente = c3
+
+func revelar_carta_extra() -> void:
+	if carta_extra_pendiente.is_empty():
+		return
+	agregar_carta_extra(carta_extra_pendiente)
+	carta_extra_pendiente = []
 
 func es_trio_especial() -> bool:
 	if cartas.size() != 3:
@@ -63,6 +74,7 @@ func mostrar_resultado() -> void:
 
 func resetear() -> void:
 	cartas.clear()
+	carta_extra_pendiente = []
 	carta1.visible = false
 	carta2.visible = false
 	carta3.visible = false

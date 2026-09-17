@@ -31,19 +31,26 @@ func _on_jugar_pressed() -> void:
 	boton_plantarse.disabled = false
 	label_ganador.text = ""
 
+	_rival_decidir()
+
 func _on_pedir_carta_pressed() -> void:
 	if area_jugador.tiene_tercera_carta():
 		return
 	area_jugador.agregar_carta_extra(mazo.repartir())
 	boton_pedir.disabled = true
 
-	# logica simple de rival: pide carta si tiene menos de 7 puntos
+func _rival_decidir() -> void:
+	if area_rival.tiene_tercera_carta():
+		return
 	if area_rival.calcular_puntos() < 7:
-		area_rival.agregar_carta_extra(mazo.repartir())
+		area_rival.decidir_carta_extra(mazo.repartir())
 
 func _on_plantarse_pressed() -> void:
+	area_rival.revelar_carta_extra() # recien ahora se muestra si el rival pidio
+
 	area_jugador.mostrar_resultado()
 	area_rival.mostrar_resultado()
+
 	boton_pedir.disabled = true
 	boton_plantarse.disabled = true
 
