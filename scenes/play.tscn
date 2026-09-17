@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://b6jqwcxv4tedv"]
+
+[ext_resource type="PackedScene" uid="uid://ct8hrbhdcwyvo" path="res://scenes/mazo.tscn" id="1_bofkp"]
+[ext_resource type="Script" uid="uid://cjygwm3qcx5ei" path="res://scenes/script/play.gd" id="1_bq38n"]
+[ext_resource type="PackedScene" uid="uid://bexe6boid3044" path="res://scenes/card.tscn" id="2_bq38n"]
+
+[node name="Play" type="Node2D"]
+script = ExtResource("1_bq38n")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+
+[node name="Mazo" parent="." instance=ExtResource("1_bofkp")]
+
+[node name="Card" parent="." instance=ExtResource("2_bq38n")]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Boton" type="Button" parent="CanvasLayer"]
+offset_left = 94.0
+offset_top = 82.0
+offset_right = 141.0
+offset_bottom = 113.0
+text = "PLAY"
+
+[connection signal="pressed" from="CanvasLayer/Boton" to="." method="_on_boton_pressed"]
