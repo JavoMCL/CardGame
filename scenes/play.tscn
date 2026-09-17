@@ -2,25 +2,46 @@
 
 [ext_resource type="PackedScene" uid="uid://ct8hrbhdcwyvo" path="res://scenes/mazo.tscn" id="1_bofkp"]
 [ext_resource type="Script" uid="uid://cjygwm3qcx5ei" path="res://scenes/script/play.gd" id="1_bq38n"]
-[ext_resource type="PackedScene" uid="uid://bexe6boid3044" path="res://scenes/card.tscn" id="2_bq38n"]
+[ext_resource type="PackedScene" uid="uid://ihl5dlfltdlg" path="res://scenes/card_area.tscn" id="3_bq38n"]
 
 [node name="Play" type="Node2D"]
 script = ExtResource("1_bq38n")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(2, 2)
-
 [node name="Mazo" parent="." instance=ExtResource("1_bofkp")]
 
-[node name="Card" parent="." instance=ExtResource("2_bq38n")]
+[node name="AreaJugador" parent="." instance=ExtResource("3_bq38n")]
+position = Vector2(109, 214)
+
+[node name="AreaRival" parent="." instance=ExtResource("3_bq38n")]
+position = Vector2(111, -191)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="Boton" type="Button" parent="CanvasLayer"]
-offset_left = 94.0
-offset_top = 82.0
-offset_right = 141.0
-offset_bottom = 113.0
+[node name="BotonJugar" type="Button" parent="CanvasLayer"]
+offset_left = 928.0
+offset_top = 431.0
+offset_right = 975.0
+offset_bottom = 462.0
 text = "PLAY"
 
-[connection signal="pressed" from="CanvasLayer/Boton" to="." method="_on_boton_pressed"]
+[node name="BotonPedirCarta" type="Button" parent="CanvasLayer"]
+offset_left = 912.0
+offset_top = 475.0
+offset_right = 997.0
+offset_bottom = 506.0
+text = "GET CARD"
+
+[node name="BotonPlantarse" type="Button" parent="CanvasLayer"]
+offset_left = 934.0
+offset_top = 518.0
+offset_right = 975.0
+offset_bottom = 549.0
+text = "Play"
+
+[node name="LabelGanador" type="Label" parent="CanvasLayer"]
+offset_left = 554.0
+offset_top = 290.0
+offset_right = 594.0
+offset_bottom = 313.0
+
+[connection signal="pressed" from="CanvasLayer/BotonJugar" to="." method="_on_boton_pressed"]
