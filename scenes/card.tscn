@@ -1,9 +1,10 @@
-[gd_scene load_steps=56 format=3 uid="uid://bexe6boid3044"]
+[gd_scene load_steps=58 format=3 uid="uid://bexe6boid3044"]
 
 [ext_resource type="Texture2D" uid="uid://bcwexchg7c5lp" path="res://tiles/Bastos.png" id="1_kg30u"]
 [ext_resource type="Script" uid="uid://7y0025ogeoni" path="res://scenes/script/card.gd" id="1_sy11y"]
 [ext_resource type="Texture2D" uid="uid://bbi4oo5aykpvw" path="res://tiles/Copas.png" id="2_sy11y"]
 [ext_resource type="Texture2D" uid="uid://d0o23evm5sbp4" path="res://tiles/Espadas.png" id="3_6ligt"]
+[ext_resource type="Texture2D" uid="uid://ovpot64n6r3l" path="res://tiles/Default.png" id="4_6ligt"]
 [ext_resource type="Texture2D" uid="uid://d2ud7j4ydbigq" path="res://tiles/Oro.png" id="4_8w5pg"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_nvopj"]
@@ -101,6 +102,10 @@ region = Rect2(192, 64, 64, 64)
 [sub_resource type="AtlasTexture" id="AtlasTexture_s05jc"]
 atlas = ExtResource("2_sy11y")
 region = Rect2(0, 128, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8w5pg"]
+atlas = ExtResource("4_6ligt")
+region = Rect2(0, 0, 64, 64)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5jtkw"]
 atlas = ExtResource("3_6ligt")
@@ -394,6 +399,14 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_8w5pg")
+}],
+"loop": true,
+"name": &"Default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_5jtkw")
 }],
 "loop": true,
@@ -593,7 +606,7 @@ script = ExtResource("1_sy11y")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_j7avg")
-animation = &"Bastos12"
+animation = &"Default"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_17cq0")

@@ -6,39 +6,70 @@ extends Node2D
 @onready var result_label: Label = $ResultLabel
 
 const SPECIAL_TRIO_VALUE := 30 # adjust to the actual game rule
+const DEAL_DELAY := 0.3 # seconds between each card appearing
 
 var cards: Array = [] # each element is [suit, value]
-var pending_extra_card: Array = []
+var pending_extra_card: Array = [] # opponent's hidden 3rd card value, until revealed
 
-func receive_cards(c1: Array, c2: Array) -> void:
+# reveal = true: cards flip face up automatically once dealt (used by the player)
+# reveal = false: cards stay face down until reveal_all() is called (used by the opponent)
+func receive_cards(c1: Array, c2: Array, reveal: bool = false) -> void:
 	cards.clear()
 	pending_extra_card = []
+	result_label.text = ""
+
+	card1.visible = false
+	card2.visible = false
+	card3.visible = false
+
 	cards.append(c1)
 	cards.append(c2)
 
-	card1.visible = true
-	card1.show_card(c1[0], c1[1])
-	card2.visible = true
-	card2.show_card(c2[0], c2[1])
-	card3.visible = false
+	await _deal_card(card1)
+	await _deal_card(card2)
 
-	result_label.text = ""
+	if reveal:
+		reveal_initial_cards()
 
+func _deal_card(card_node: StaticBody2D) -> void:
+	card_node.show_face_down()
+	card_node.visible = true
+	await get_tree().create_timer(DEAL_DELAY).timeout
+
+func reveal_initial_cards() -> void:
+	if cards.size() > 0:
+		card1.show_card(cards[0][0], cards[0][1])
+	if cards.size() > 1:
+		card2.show_card(cards[1][0], cards[1][1])
+
+# Used by the PLAYER's hit button: deals face down, waits, then reveals the value.
 func add_extra_card(c3: Array) -> void:
 	if cards.size() >= 3:
 		return
 	cards.append(c3)
-	card3.visible = true
+	await _deal_card(card3)
 	card3.show_card(c3[0], c3[1])
 
+# Used by the OPPONENT: the card appears face down immediately (visible feedback
+# that it took a card), but its value stays hidden until reveal_extra_card().
 func decide_extra_card(c3: Array) -> void:
+	if cards.size() >= 3:
+		return
+	cards.append(c3)
 	pending_extra_card = c3
+	card3.show_face_down()
+	card3.visible = true
 
 func reveal_extra_card() -> void:
 	if pending_extra_card.is_empty():
 		return
-	add_extra_card(pending_extra_card)
+	card3.show_card(pending_extra_card[0], pending_extra_card[1])
 	pending_extra_card = []
+
+# Reveals the opponent's initial 2 cards + the pending extra card value, if any.
+func reveal_all() -> void:
+	reveal_initial_cards()
+	reveal_extra_card()
 
 func is_special_trio() -> bool:
 	if cards.size() != 3:

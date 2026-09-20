@@ -24,38 +24,43 @@ func _on_card_dealt(remaining: int) -> void:
 	_update_deck_label(remaining)
 
 func _update_deck_label(remaining: int) -> void:
-	deck_count_label.text = "48/: %d" % remaining
+	deck_count_label.text = "Cards remaining: %d" % remaining
 
 func _on_play_pressed() -> void:
 	if round_active:
 		_reset_round()
 		return
 
-	player_area.receive_cards(deck.deal(), deck.deal())
-	opponent_area.receive_cards(deck.deal(), deck.deal())
-
-	round_active = true
-	play_button.text = "Next round"
-	hit_button.disabled = false
-	stand_button.disabled = false
+	play_button.disabled = true
+	hit_button.disabled = true
+	stand_button.disabled = true
 	winner_label.text = ""
+	round_active = true
+
+	player_area.receive_cards(deck.deal(), deck.deal(), true)
+	await opponent_area.receive_cards(deck.deal(), deck.deal(), false)
 
 	_opponent_decide()
+
+	play_button.text = "Next round"
+	play_button.disabled = false
+	hit_button.disabled = false
+	stand_button.disabled = false
 
 func _on_hit_pressed() -> void:
 	if player_area.has_third_card():
 		return
-	player_area.add_extra_card(deck.deal())
 	hit_button.disabled = true
+	await player_area.add_extra_card(deck.deal())
 
 func _opponent_decide() -> void:
 	if opponent_area.has_third_card():
 		return
 	if opponent_area.calculate_score() < 7:
-		opponent_area.decide_extra_card(deck.deal())
+		opponent_area.decide_extra_card(deck.deal()) # shows face down now, value hidden
 
 func _on_stand_pressed() -> void:
-	opponent_area.reveal_extra_card() # only shown now, once you stand
+	opponent_area.reveal_all() # value of hidden cards shown only now
 
 	player_area.show_result()
 	opponent_area.show_result()

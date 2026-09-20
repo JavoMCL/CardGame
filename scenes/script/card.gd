@@ -5,7 +5,10 @@ extends StaticBody2D
 var suit: String
 var value: int
 
+func show_face_down() -> void:
+	sprite.play("Default")
+
 func show_card(s: String, v: int) -> void:
 	suit = s
 	value = v
-	sprite.play(s + str(v)) # ex: "Oro" + "10" = "Oro10"
+	sprite.play(s + str(v))
