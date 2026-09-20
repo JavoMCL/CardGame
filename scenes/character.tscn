@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://dfw61i62c086h"]
+
+[ext_resource type="Texture2D" uid="uid://e36hhcqrwvaf" path="res://tiles/Portrait.png" id="1_agfs1"]
+[ext_resource type="Script" uid="uid://ccdxkr2uitndc" path="res://scenes/script/character.gd" id="1_rkhd4"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rkhd4"]
+atlas = ExtResource("1_agfs1")
+
+[node name="Character" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_rkhd4")
+
+[node name="Portrait" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = SubResource("AtlasTexture_rkhd4")
+
+[node name="HpLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 41.0
+offset_top = 1.0
+offset_right = 81.0
+offset_bottom = 24.0

@@ -1,9 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://b6jqwcxv4tedv"]
+[gd_scene load_steps=8 format=3 uid="uid://b6jqwcxv4tedv"]
 
 [ext_resource type="PackedScene" uid="uid://ct8hrbhdcwyvo" path="res://scenes/mazo.tscn" id="1_bofkp"]
 [ext_resource type="Script" uid="uid://cjygwm3qcx5ei" path="res://scenes/script/play.gd" id="1_bq38n"]
 [ext_resource type="PackedScene" uid="uid://ihl5dlfltdlg" path="res://scenes/card_area.tscn" id="3_bq38n"]
 [ext_resource type="Texture2D" uid="uid://ovpot64n6r3l" path="res://tiles/Default.png" id="4_hsi3f"]
+[ext_resource type="PackedScene" uid="uid://dfw61i62c086h" path="res://scenes/character.tscn" id="5_65v2a"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_65v2a"]
 atlas = ExtResource("4_hsi3f")
@@ -29,7 +30,7 @@ script = ExtResource("1_bq38n")
 position = Vector2(109, 214)
 
 [node name="OpponentArea" parent="." instance=ExtResource("3_bq38n")]
-position = Vector2(111, -191)
+position = Vector2(115, -113)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -69,6 +70,20 @@ offset_bottom = 564.0
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="CanvasLayer"]
 position = Vector2(215, 509)
 sprite_frames = SubResource("SpriteFrames_j27tm")
+
+[node name="OpponentCharacter" parent="CanvasLayer" instance=ExtResource("5_65v2a")]
+offset_left = 510.0
+offset_top = 60.0
+offset_right = 550.0
+offset_bottom = 100.0
+card_area_path = NodePath("../../OpponentArea")
+
+[node name="PlayerCharacter" parent="CanvasLayer" instance=ExtResource("5_65v2a")]
+offset_left = 504.0
+offset_top = 571.0
+offset_right = 544.0
+offset_bottom = 611.0
+card_area_path = NodePath("../../PlayerArea")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(578, 324)

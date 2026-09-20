@@ -2,6 +2,11 @@ extends Node
 
 signal card_dealt(remaining: int)
 
+const TOTAL_CARDS := 48
+
+func total_cards() -> int:
+	return TOTAL_CARDS
+
 const SUITS := ["Oro", "Espadas", "Copas", "Bastos"]
 var available_cards: Array = []
 
