@@ -1,47 +1,76 @@
-[gd_scene load_steps=4 format=3 uid="uid://b6jqwcxv4tedv"]
+[gd_scene load_steps=7 format=3 uid="uid://b6jqwcxv4tedv"]
 
 [ext_resource type="PackedScene" uid="uid://ct8hrbhdcwyvo" path="res://scenes/mazo.tscn" id="1_bofkp"]
 [ext_resource type="Script" uid="uid://cjygwm3qcx5ei" path="res://scenes/script/play.gd" id="1_bq38n"]
 [ext_resource type="PackedScene" uid="uid://ihl5dlfltdlg" path="res://scenes/card_area.tscn" id="3_bq38n"]
+[ext_resource type="Texture2D" uid="uid://ovpot64n6r3l" path="res://tiles/Default.png" id="4_hsi3f"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_65v2a"]
+atlas = ExtResource("4_hsi3f")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_j27tm"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_65v2a")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
 
 [node name="Play" type="Node2D"]
 script = ExtResource("1_bq38n")
 
-[node name="Mazo" parent="." instance=ExtResource("1_bofkp")]
+[node name="Deck" parent="." instance=ExtResource("1_bofkp")]
 
-[node name="AreaJugador" parent="." instance=ExtResource("3_bq38n")]
+[node name="PlayerArea" parent="." instance=ExtResource("3_bq38n")]
 position = Vector2(109, 214)
 
-[node name="AreaRival" parent="." instance=ExtResource("3_bq38n")]
+[node name="OpponentArea" parent="." instance=ExtResource("3_bq38n")]
 position = Vector2(111, -191)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="BotonJugar" type="Button" parent="CanvasLayer"]
+[node name="PlayButton" type="Button" parent="CanvasLayer"]
 offset_left = 928.0
 offset_top = 431.0
 offset_right = 975.0
 offset_bottom = 462.0
 text = "PLAY"
 
-[node name="BotonPedirCarta" type="Button" parent="CanvasLayer"]
+[node name="HitButton" type="Button" parent="CanvasLayer"]
 offset_left = 912.0
 offset_top = 475.0
 offset_right = 997.0
 offset_bottom = 506.0
 text = "GET CARD"
 
-[node name="BotonPlantarse" type="Button" parent="CanvasLayer"]
+[node name="StandButton" type="Button" parent="CanvasLayer"]
 offset_left = 934.0
 offset_top = 518.0
 offset_right = 975.0
 offset_bottom = 549.0
 text = "Play"
 
-[node name="LabelGanador" type="Label" parent="CanvasLayer"]
+[node name="WinnerLabel" type="Label" parent="CanvasLayer"]
 offset_left = 554.0
 offset_top = 290.0
 offset_right = 594.0
 offset_bottom = 313.0
 
-[connection signal="pressed" from="CanvasLayer/BotonJugar" to="." method="_on_boton_pressed"]
+[node name="DeckCountLabel" type="Label" parent="CanvasLayer"]
+offset_left = 196.0
+offset_top = 541.0
+offset_right = 236.0
+offset_bottom = 564.0
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="CanvasLayer"]
+position = Vector2(215, 509)
+sprite_frames = SubResource("SpriteFrames_j27tm")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(578, 324)
+
+[connection signal="pressed" from="CanvasLayer/PlayButton" to="." method="_on_boton_pressed"]

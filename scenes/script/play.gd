@@ -1,95 +1,104 @@
 extends Node2D
 
-@onready var mazo: Node = $Mazo
-@onready var area_jugador: Node2D = $AreaJugador
-@onready var area_rival: Node2D = $AreaRival
+@onready var deck: Node = $Deck
+@onready var player_area: Node2D = $PlayerArea
+@onready var opponent_area: Node2D = $OpponentArea
 
-@onready var boton_jugar: Button = $CanvasLayer/BotonJugar
-@onready var boton_pedir: Button = $CanvasLayer/BotonPedirCarta
-@onready var boton_plantarse: Button = $CanvasLayer/BotonPlantarse
-@onready var label_ganador: Label = $CanvasLayer/LabelGanador
+@onready var play_button: Button = $CanvasLayer/PlayButton
+@onready var hit_button: Button = $CanvasLayer/HitButton
+@onready var stand_button: Button = $CanvasLayer/StandButton
+@onready var winner_label: Label = $CanvasLayer/WinnerLabel
+@onready var deck_count_label: Label = $CanvasLayer/DeckCountLabel
 
-var ronda_activa: bool = false
+var round_active: bool = false
 
 func _ready() -> void:
-	boton_jugar.pressed.connect(_on_jugar_pressed)
-	boton_pedir.pressed.connect(_on_pedir_carta_pressed)
-	boton_plantarse.pressed.connect(_on_plantarse_pressed)
-	_reset_ronda()
+	play_button.pressed.connect(_on_play_pressed)
+	hit_button.pressed.connect(_on_hit_pressed)
+	stand_button.pressed.connect(_on_stand_pressed)
+	deck.card_dealt.connect(_on_card_dealt)
+	_reset_round()
+	_update_deck_label(deck.cards_remaining())
 
-func _on_jugar_pressed() -> void:
-	if ronda_activa:
-		_reset_ronda()
+func _on_card_dealt(remaining: int) -> void:
+	_update_deck_label(remaining)
+
+func _update_deck_label(remaining: int) -> void:
+	deck_count_label.text = "48/: %d" % remaining
+
+func _on_play_pressed() -> void:
+	if round_active:
+		_reset_round()
 		return
 
-	area_jugador.recibir_cartas(mazo.repartir(), mazo.repartir())
-	area_rival.recibir_cartas(mazo.repartir(), mazo.repartir())
+	player_area.receive_cards(deck.deal(), deck.deal())
+	opponent_area.receive_cards(deck.deal(), deck.deal())
 
-	ronda_activa = true
-	boton_jugar.text = "Siguiente ronda"
-	boton_pedir.disabled = false
-	boton_plantarse.disabled = false
-	label_ganador.text = ""
+	round_active = true
+	play_button.text = "Next round"
+	hit_button.disabled = false
+	stand_button.disabled = false
+	winner_label.text = ""
 
-	_rival_decidir()
+	_opponent_decide()
 
-func _on_pedir_carta_pressed() -> void:
-	if area_jugador.tiene_tercera_carta():
+func _on_hit_pressed() -> void:
+	if player_area.has_third_card():
 		return
-	area_jugador.agregar_carta_extra(mazo.repartir())
-	boton_pedir.disabled = true
+	player_area.add_extra_card(deck.deal())
+	hit_button.disabled = true
 
-func _rival_decidir() -> void:
-	if area_rival.tiene_tercera_carta():
+func _opponent_decide() -> void:
+	if opponent_area.has_third_card():
 		return
-	if area_rival.calcular_puntos() < 7:
-		area_rival.decidir_carta_extra(mazo.repartir())
+	if opponent_area.calculate_score() < 7:
+		opponent_area.decide_extra_card(deck.deal())
 
-func _on_plantarse_pressed() -> void:
-	area_rival.revelar_carta_extra() # recien ahora se muestra si el rival pidio
+func _on_stand_pressed() -> void:
+	opponent_area.reveal_extra_card() # only shown now, once you stand
 
-	area_jugador.mostrar_resultado()
-	area_rival.mostrar_resultado()
+	player_area.show_result()
+	opponent_area.show_result()
 
-	boton_pedir.disabled = true
-	boton_plantarse.disabled = true
+	hit_button.disabled = true
+	stand_button.disabled = true
 
-	label_ganador.text = determinar_ganador()
+	winner_label.text = determine_winner()
 
-func determinar_ganador() -> String:
-	var jugador_trio: bool = area_jugador.es_trio_especial()
-	var rival_trio: bool = area_rival.es_trio_especial()
+func determine_winner() -> String:
+	var player_trio: bool = player_area.is_special_trio()
+	var opponent_trio: bool = opponent_area.is_special_trio()
 
-	if jugador_trio and rival_trio:
-		return "Empate"
-	elif jugador_trio:
-		return "Ganaste (trio especial)"
-	elif rival_trio:
-		return "Gano el rival (trio especial)"
+	if player_trio and opponent_trio:
+		return "Draw"
+	elif player_trio:
+		return "You win (special trio)"
+	elif opponent_trio:
+		return "Opponent wins (special trio)"
 
-	var puntos_jugador: int = area_jugador.calcular_puntos()
-	var puntos_rival: int = area_rival.calcular_puntos()
+	var player_score: int = player_area.calculate_score()
+	var opponent_score: int = opponent_area.calculate_score()
 
-	if puntos_jugador > puntos_rival:
-		return "Ganaste"
-	elif puntos_rival > puntos_jugador:
-		return "Gano el rival"
+	if player_score > opponent_score:
+		return "You win"
+	elif opponent_score > player_score:
+		return "Opponent wins"
 	else:
-		var cartas_jugador: int = area_jugador.cantidad_cartas()
-		var cartas_rival: int = area_rival.cantidad_cartas()
+		var player_cards: int = player_area.card_count()
+		var opponent_cards: int = opponent_area.card_count()
 
-		if cartas_jugador == cartas_rival:
-			return "Empate"
-		elif cartas_jugador < cartas_rival:
-			return "Ganaste (menos cartas)"
+		if player_cards == opponent_cards:
+			return "Draw"
+		elif player_cards < opponent_cards:
+			return "You win (fewer cards)"
 		else:
-			return "Gano el rival (menos cartas)"
+			return "Opponent wins (fewer cards)"
 
-func _reset_ronda() -> void:
-	area_jugador.resetear()
-	area_rival.resetear()
-	ronda_activa = false
-	boton_jugar.text = "Jugar"
-	boton_pedir.disabled = true
-	boton_plantarse.disabled = true
-	label_ganador.text = ""
+func _reset_round() -> void:
+	player_area.reset()
+	opponent_area.reset()
+	round_active = false
+	play_button.text = "Play"
+	hit_button.disabled = true
+	stand_button.disabled = true
+	winner_label.text = ""

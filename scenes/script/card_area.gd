@@ -1,81 +1,81 @@
 extends Node2D
 
-@onready var carta1: StaticBody2D = $Carta1
-@onready var carta2: StaticBody2D = $Carta2
-@onready var carta3: StaticBody2D = $Carta3
-@onready var label_resultado: Label = $LabelResultado
+@onready var card1: StaticBody2D = $Card1
+@onready var card2: StaticBody2D = $Card2
+@onready var card3: StaticBody2D = $Card3
+@onready var result_label: Label = $ResultLabel
 
-const VALOR_ESPECIAL_TRIO_FIGURAS := 30 # ajustar segun la regla real
+const SPECIAL_TRIO_VALUE := 30 # adjust to the actual game rule
 
-var cartas: Array = [] # cada elemento es [palo, valor]
-var carta_extra_pendiente: Array = []
+var cards: Array = [] # each element is [suit, value]
+var pending_extra_card: Array = []
 
-func recibir_cartas(c1: Array, c2: Array) -> void:
-	cartas.clear()
-	carta_extra_pendiente = []
-	cartas.append(c1)
-	cartas.append(c2)
+func receive_cards(c1: Array, c2: Array) -> void:
+	cards.clear()
+	pending_extra_card = []
+	cards.append(c1)
+	cards.append(c2)
 
-	carta1.visible = true
-	carta1.mostrar(c1[0], c1[1])
-	carta2.visible = true
-	carta2.mostrar(c2[0], c2[1])
-	carta3.visible = false
+	card1.visible = true
+	card1.show_card(c1[0], c1[1])
+	card2.visible = true
+	card2.show_card(c2[0], c2[1])
+	card3.visible = false
 
-	label_resultado.text = ""
+	result_label.text = ""
 
-func agregar_carta_extra(c3: Array) -> void:
-	if cartas.size() >= 3:
+func add_extra_card(c3: Array) -> void:
+	if cards.size() >= 3:
 		return
-	cartas.append(c3)
-	carta3.visible = true
-	carta3.mostrar(c3[0], c3[1])
+	cards.append(c3)
+	card3.visible = true
+	card3.show_card(c3[0], c3[1])
 
-func decidir_carta_extra(c3: Array) -> void:
-	carta_extra_pendiente = c3
+func decide_extra_card(c3: Array) -> void:
+	pending_extra_card = c3
 
-func revelar_carta_extra() -> void:
-	if carta_extra_pendiente.is_empty():
+func reveal_extra_card() -> void:
+	if pending_extra_card.is_empty():
 		return
-	agregar_carta_extra(carta_extra_pendiente)
-	carta_extra_pendiente = []
+	add_extra_card(pending_extra_card)
+	pending_extra_card = []
 
-func es_trio_especial() -> bool:
-	if cartas.size() != 3:
+func is_special_trio() -> bool:
+	if cards.size() != 3:
 		return false
-	for c in cartas:
+	for c in cards:
 		if c[1] <= 9:
 			return false
 	return true
 
-func cantidad_cartas() -> int:
-	return cartas.size()
+func card_count() -> int:
+	return cards.size()
 
-func tiene_tercera_carta() -> bool:
-	return cartas.size() >= 3
+func has_third_card() -> bool:
+	return cards.size() >= 3
 
-func calcular_puntos() -> int:
-	if es_trio_especial():
-		return VALOR_ESPECIAL_TRIO_FIGURAS
+func calculate_score() -> int:
+	if is_special_trio():
+		return SPECIAL_TRIO_VALUE
 
-	var suma := 0
-	for c in cartas:
-		var valor: int = c[1]
-		if valor <= 9:
-			suma += valor
+	var total := 0
+	for c in cards:
+		var value: int = c[1]
+		if value <= 9:
+			total += value
 
-	while suma > 9:
-		suma -= 9
+	while total > 9:
+		total -= 9
 
-	return suma
+	return total
 
-func mostrar_resultado() -> void:
-	label_resultado.text = "Total: %d" % calcular_puntos()
+func show_result() -> void:
+	result_label.text = "Total: %d" % calculate_score()
 
-func resetear() -> void:
-	cartas.clear()
-	carta_extra_pendiente = []
-	carta1.visible = false
-	carta2.visible = false
-	carta3.visible = false
-	label_resultado.text = ""
+func reset() -> void:
+	cards.clear()
+	pending_extra_card = []
+	card1.visible = false
+	card2.visible = false
+	card3.visible = false
+	result_label.text = ""

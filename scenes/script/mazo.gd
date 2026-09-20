@@ -1,19 +1,26 @@
-extends Node2D
+extends Node
 
-const PALOS := ["Oro", "Espadas", "Copas", "Bastos"]
-var cartas_disponibles: Array = []
+signal card_dealt(remaining: int)
+
+const SUITS := ["Oro", "Espadas", "Copas", "Bastos"]
+var available_cards: Array = []
 
 func _ready() -> void:
-	generar_mazo()
+	generate_deck()
 
-func generar_mazo() -> void:
-	cartas_disponibles.clear()
-	for palo in PALOS:
-		for valor in range(1, 13):
-			cartas_disponibles.append([palo, valor])
-	cartas_disponibles.shuffle()
+func generate_deck() -> void:
+	available_cards.clear()
+	for suit in SUITS:
+		for value in range(1, 13):
+			available_cards.append([suit, value])
+	available_cards.shuffle()
 
-func repartir() -> Array:
-	if cartas_disponibles.is_empty():
-		generar_mazo() 
-	return cartas_disponibles.pop_back()
+func deal() -> Array:
+	if available_cards.is_empty():
+		generate_deck() # deck ran out, reshuffle
+	var card: Array = available_cards.pop_back()
+	card_dealt.emit(available_cards.size())
+	return card
+
+func cards_remaining() -> int:
+	return available_cards.size()

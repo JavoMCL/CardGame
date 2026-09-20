@@ -2,10 +2,10 @@ extends StaticBody2D
 
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
-var palo: String
-var valor: int
+var suit: String
+var value: int
 
-func mostrar(p: String, v: int) -> void:
-	palo = p
-	valor = v
-	sprite.play(p + str(v)) 
+func show_card(s: String, v: int) -> void:
+	suit = s
+	value = v
+	sprite.play(s + str(v)) # ex: "Oro" + "10" = "Oro10"
