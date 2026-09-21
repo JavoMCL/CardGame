@@ -85,6 +85,27 @@ offset_right = 544.0
 offset_bottom = 611.0
 card_area_path = NodePath("../../PlayerArea")
 
+[node name="DefenseSkillButton" type="Button" parent="CanvasLayer"]
+offset_left = 274.0
+offset_top = 429.0
+offset_right = 346.0
+offset_bottom = 460.0
+text = "Defense"
+
+[node name="DamageSkillButton" type="Button" parent="CanvasLayer"]
+offset_left = 275.0
+offset_top = 471.0
+offset_right = 347.0
+offset_bottom = 502.0
+text = "Damage"
+
+[node name="HealSkillButton" type="Button" parent="CanvasLayer"]
+offset_left = 288.0
+offset_top = 513.0
+offset_right = 331.0
+offset_bottom = 544.0
+text = "Heal"
+
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(578, 324)
 

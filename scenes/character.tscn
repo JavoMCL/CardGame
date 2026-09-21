@@ -25,3 +25,10 @@ offset_left = 41.0
 offset_top = 1.0
 offset_right = 81.0
 offset_bottom = 24.0
+
+[node name="ManaLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 41.0
+offset_top = 23.0
+offset_right = 81.0
+offset_bottom = 46.0
