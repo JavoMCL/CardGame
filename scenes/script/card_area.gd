@@ -5,7 +5,7 @@ extends Node2D
 @onready var card3: StaticBody2D = $Card3
 @onready var result_label: Label = $ResultLabel
 
-const SPECIAL_TRIO_VALUE := 30 # adjust to the actual game rule
+const SPECIAL_TRIO_VALUE := 15 # changed from 30
 const DEAL_DELAY := 0.3 # seconds between each card appearing
 
 var cards: Array = [] # each element is [suit, value]

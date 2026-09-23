@@ -14,14 +14,19 @@ extends Node2D
 @onready var heal_skill_button: Button = $CanvasLayer/HealSkillButton
 @onready var winner_label: Label = $CanvasLayer/WinnerLabel
 @onready var deck_count_label: Label = $CanvasLayer/DeckCountLabel
+@onready var end_menu: Control = $CanvasLayer/EndMenu
 
 const NINE_SCORE := 9
 const ROUND_WIN_MANA := 10
 const OPPONENT_HEAL_CHANCE := 0.2
 const OPPONENT_HEAL_HP_THRESHOLD := 10
+const MAX_FIGHTS := 4
+const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 
 var round_active: bool = false
 var combat_over: bool = false
+var current_fight: int = 1
+var is_paused: bool = false
 
 func _ready() -> void:
 	play_button.pressed.connect(_on_play_pressed)
@@ -34,8 +39,36 @@ func _ready() -> void:
 	player_character.defeated.connect(_on_character_defeated)
 	opponent_character.defeated.connect(_on_character_defeated)
 
+	end_menu.next_pressed.connect(_on_next_fight_pressed)
+	end_menu.continue_pressed.connect(_on_continue_pressed)
+	end_menu.restart_pressed.connect(_on_restart_pressed)
+	end_menu.exit_pressed.connect(_on_exit_pressed)
+
 	_reset_round()
 	_update_deck_label(deck.cards_remaining())
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_toggle_pause()
+
+func _toggle_pause() -> void:
+	if combat_over:
+		return # a win/lose/final menu is already showing, ESC shouldn't open pause over it
+
+	if is_paused:
+		_on_continue_pressed()
+	else:
+		_pause_game()
+
+func _pause_game() -> void:
+	is_paused = true
+	get_tree().paused = true
+	end_menu.show_result("Paused", true, true)
+
+func _on_continue_pressed() -> void:
+	is_paused = false
+	get_tree().paused = false
+	end_menu.hide_menu()
 
 func _on_card_dealt(remaining: int) -> void:
 	_update_deck_label(remaining)
@@ -76,7 +109,7 @@ func _on_hit_pressed() -> void:
 	if player_area.has_third_card():
 		return
 	hit_button.disabled = true
-	_disable_skill_buttons() # the skill window closes once you decide to hit
+	_disable_skill_buttons()
 	await player_area.add_extra_card(deck.deal())
 
 func _on_defense_skill_pressed() -> void:
@@ -90,7 +123,7 @@ func _on_heal_skill_pressed() -> void:
 
 func _try_use_player_skill(skill_name: String) -> void:
 	if player_character.use_skill(skill_name):
-		_disable_skill_buttons() # only one skill per round
+		_disable_skill_buttons()
 
 func _disable_skill_buttons() -> void:
 	defense_skill_button.disabled = true
@@ -105,7 +138,6 @@ func _enable_skill_buttons() -> void:
 func _opponent_decide() -> void:
 	var initial_score: int = opponent_area.calculate_score()
 
-	# Skill decision happens first, based on the initial 2-card score.
 	if opponent_character.current_hp < opponent_character.max_hp - OPPONENT_HEAL_HP_THRESHOLD \
 			and randf() < OPPONENT_HEAL_CHANCE:
 		opponent_character.use_skill("heal")
@@ -113,9 +145,7 @@ func _opponent_decide() -> void:
 		opponent_character.use_skill("damage")
 	elif initial_score <= 5:
 		opponent_character.use_skill("defense")
-	# score == 6: no skill used
 
-	# Hit decision (existing logic).
 	if opponent_area.has_third_card():
 		return
 	if opponent_area.calculate_score() < 7:
@@ -166,12 +196,14 @@ func _build_result(winner: String, winner_score: int, loser_score: int, suffix: 
 	var winner_character: Control = player_character if winner == "player" else opponent_character
 	var loser_character: Control = opponent_character if winner == "player" else player_character
 
-	# Damage skill: winner bet on winning, damage increases 50%.
-	if winner_character.pending_skill == "damage":
-		damage = int(floor(damage * 1.5))
+	var winner_used_damage: bool = winner_character.pending_skill == "damage"
+	var loser_used_defense: bool = loser_character.pending_skill == "defense"
 
-	# Defense skill: loser bet on losing, damage they take is reduced 50%.
-	if loser_character.pending_skill == "defense":
+	if winner_used_damage and loser_used_defense:
+		pass # opposing skills cancel out
+	elif winner_used_damage:
+		damage = int(floor(damage * 1.5))
+	elif loser_used_defense:
 		damage = int(floor(damage * 0.5))
 
 	var who: String = "You win" if winner == "player" else "Opponent wins"
@@ -198,12 +230,46 @@ func _on_character_defeated() -> void:
 	stand_button.disabled = true
 	_disable_skill_buttons()
 
-	if not player_character.is_alive() and not opponent_character.is_alive():
-		winner_label.text += "\nDouble KO! It's a draw"
-	elif not player_character.is_alive():
-		winner_label.text += "\nGAME OVER - You lost"
+	var player_alive: bool = player_character.is_alive()
+	var opponent_alive: bool = opponent_character.is_alive()
+
+	if not player_alive and not opponent_alive:
+		end_menu.show_result("Double KO - Draw", false)
+	elif not player_alive:
+		end_menu.show_result("GAME OVER - You lost", false)
 	else:
-		winner_label.text += "\nVICTORY - You won the fight!"
+		if current_fight < MAX_FIGHTS:
+			end_menu.show_result("Fight %d won!" % current_fight, true)
+		else:
+			end_menu.show_result("VICTORY! You won the match", false)
+
+func _on_next_fight_pressed() -> void:
+	current_fight += 1
+	end_menu.hide_menu()
+	_start_new_fight()
+
+func _on_restart_pressed() -> void:
+	is_paused = false
+	get_tree().paused = false
+	current_fight = 1
+	end_menu.hide_menu()
+	_start_new_fight()
+
+func _on_exit_pressed() -> void:
+	is_paused = false
+	get_tree().paused = false
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+
+func _start_new_fight() -> void:
+	player_character.reset_hp()
+	player_character.reset_mana()
+	player_character.clear_pending_skill()
+	opponent_character.reset_hp()
+	opponent_character.reset_mana()
+	opponent_character.clear_pending_skill()
+	combat_over = false
+	_reset_round()
+	play_button.disabled = false
 
 func _reset_round() -> void:
 	player_area.reset()
@@ -214,14 +280,3 @@ func _reset_round() -> void:
 	stand_button.disabled = true
 	_disable_skill_buttons()
 	winner_label.text = ""
-
-func restart_combat() -> void:
-	player_character.reset_hp()
-	player_character.reset_mana()
-	player_character.clear_pending_skill()
-	opponent_character.reset_hp()
-	opponent_character.reset_mana()
-	opponent_character.clear_pending_skill()
-	combat_over = false
-	_reset_round()
-	play_button.disabled = false
