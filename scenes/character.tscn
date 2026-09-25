@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dfw61i62c086h"]
+[gd_scene load_steps=10 format=3 uid="uid://dfw61i62c086h"]
 
 [ext_resource type="Script" uid="uid://ccdxkr2uitndc" path="res://scenes/script/character.gd" id="1_rkhd4"]
 [ext_resource type="Texture2D" uid="uid://dbqd3dhxa1x1t" path="res://tiles/Bar.png" id="2_rkhd4"]
+[ext_resource type="Texture2D" uid="uid://dn8yn1vn8iwq7" path="res://tiles/ManaSkills.png" id="3_lrhn5"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_lrhn5"]
 atlas = ExtResource("2_rkhd4")
@@ -10,6 +11,45 @@ region = Rect2(0, 25.8516, 65.5863, 12.2343)
 [sub_resource type="AtlasTexture" id="AtlasTexture_my7n2"]
 atlas = ExtResource("2_rkhd4")
 region = Rect2(64.1594, 26.127, 63.8406, 11.7262)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0lw5n"]
+atlas = ExtResource("3_lrhn5")
+region = Rect2(0, 16, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dp8ca"]
+atlas = ExtResource("3_lrhn5")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2cgup"]
+atlas = ExtResource("3_lrhn5")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rkhd4"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0lw5n")
+}],
+"loop": true,
+"name": &"damage",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dp8ca")
+}],
+"loop": true,
+"name": &"defense",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2cgup")
+}],
+"loop": true,
+"name": &"heal",
+"speed": 5.0
+}]
 
 [node name="Character" type="Control"]
 layout_mode = 3
@@ -20,8 +60,9 @@ script = ExtResource("1_rkhd4")
 
 [node name="Portrait" type="TextureRect" parent="."]
 layout_mode = 0
+offset_top = 4.0
 offset_right = 40.0
-offset_bottom = 40.0
+offset_bottom = 44.0
 
 [node name="HpLabel" type="Label" parent="."]
 layout_mode = 0
@@ -39,20 +80,26 @@ offset_bottom = 46.0
 
 [node name="HpBar" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 83.0
-offset_top = 5.0
-offset_right = 148.0
-offset_bottom = 45.0
+offset_left = 93.0
+offset_top = 7.0
+offset_right = 158.0
+offset_bottom = 47.0
 value = 100.0
 texture_under = SubResource("AtlasTexture_lrhn5")
 texture_progress = SubResource("AtlasTexture_my7n2")
 
 [node name="MpBar" type="TextureProgressBar" parent="."]
-offset_left = 83.0
-offset_top = 28.0
-offset_right = 148.0
-offset_bottom = 68.0
+layout_mode = 0
+offset_left = 92.0
+offset_top = 30.0
+offset_right = 157.0
+offset_bottom = 70.0
 value = 100.0
 texture_under = SubResource("AtlasTexture_lrhn5")
 texture_progress = SubResource("AtlasTexture_my7n2")
 tint_progress = Color(0.129412, 0.545098, 1, 1)
+
+[node name="SkillSprite" type="AnimatedSprite2D" parent="."]
+position = Vector2(101, 53)
+sprite_frames = SubResource("SpriteFrames_rkhd4")
+animation = &"heal"
