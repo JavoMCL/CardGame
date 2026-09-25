@@ -8,11 +8,13 @@ signal defeated
 @export var max_hp: int = 30
 @export var max_mana: int = 50
 @export var portrait_texture: Texture2D
-@export var card_area_path: NodePath # set in the editor, pointing to PlayerArea or OpponentArea
+@export var card_area_path: NodePath
 
 @onready var portrait: TextureRect = $Portrait
 @onready var hp_label: Label = $HpLabel
 @onready var mana_label: Label = $ManaLabel
+@onready var hp_bar: TextureProgressBar = $HpBar
+@onready var mp_bar: TextureProgressBar = $MpBar
 
 const DEFENSE_COST := 20
 const DAMAGE_COST := 20
@@ -23,9 +25,8 @@ var current_hp: int
 var current_mana: int
 var card_area: Node2D
 
-# "none", "defense", or "damage" - only these two are relevant at combat resolution,
-# since "heal" applies its effect immediately and doesn't need to be remembered.
 var pending_skill: String = "none"
+
 
 func _ready() -> void:
 	current_hp = max_hp
@@ -38,69 +39,106 @@ func _ready() -> void:
 		card_area = get_node(card_area_path)
 
 	_update_hp_label()
+	_update_hp_bar()
+
 	_update_mana_label()
+	_update_mp_bar()
+
 
 func get_score() -> int:
 	return card_area.calculate_score()
 
+
 func get_card_count() -> int:
 	return card_area.card_count()
+
 
 func is_special_trio() -> bool:
 	return card_area.is_special_trio()
 
+
 func take_damage(amount: int) -> void:
 	current_hp = max(current_hp - amount, 0)
+
 	_update_hp_label()
+	_update_hp_bar()
+
 	hp_changed.emit(current_hp)
+
 	if current_hp <= 0:
 		defeated.emit()
 
+
 func heal(amount: int) -> void:
 	current_hp = min(current_hp + amount, max_hp)
+
 	_update_hp_label()
+	_update_hp_bar()
+
 	hp_changed.emit(current_hp)
+
 
 func is_alive() -> bool:
 	return current_hp > 0
 
+
 func reset_hp() -> void:
 	current_hp = max_hp
+
 	_update_hp_label()
+	_update_hp_bar()
+
 	hp_changed.emit(current_hp)
+
 
 func reset_mana() -> void:
 	current_mana = max_mana
+
 	_update_mana_label()
+	_update_mp_bar()
+
 	mana_changed.emit(current_mana)
+
 
 func can_afford(cost: int) -> bool:
 	return current_mana >= cost
 
+
 func spend_mana(cost: int) -> void:
 	current_mana = max(current_mana - cost, 0)
+
 	_update_mana_label()
+	_update_mp_bar()
+
 	mana_changed.emit(current_mana)
+
 
 func gain_mana(amount: int) -> void:
 	if current_mana < max_mana:
 		current_mana = min(current_mana + amount, max_mana)
+
 		_update_mana_label()
+		_update_mp_bar()
+
 		mana_changed.emit(current_mana)
 
-# Returns true if the skill was successfully used (enough mana), false otherwise.
+
 func use_skill(skill_name: String) -> bool:
 	if pending_skill != "none":
-		return false # already used a skill this round
+		return false
 
 	var cost: int
+
 	match skill_name:
 		"defense":
 			cost = DEFENSE_COST
+
 		"damage":
 			cost = DAMAGE_COST
+
 		"heal":
 			cost = HEAL_COST
+
 		_:
 			return false
 
@@ -116,14 +154,28 @@ func use_skill(skill_name: String) -> bool:
 
 	return true
 
+
 func has_used_skill() -> bool:
 	return pending_skill != "none"
+
 
 func clear_pending_skill() -> void:
 	pending_skill = "none"
 
+
 func _update_hp_label() -> void:
-	hp_label.text = "%s HP: %d" % [character_name, current_hp]
+	hp_label.text = "HP: %d" % current_hp
+
+
+func _update_hp_bar() -> void:
+	hp_bar.max_value = max_hp
+	hp_bar.value = current_hp
+
 
 func _update_mana_label() -> void:
-	mana_label.text = "%s MP: %d/%d" % [character_name, current_mana, max_mana]
+	mana_label.text = "MP: %d" % current_mana
+
+
+func _update_mp_bar() -> void:
+	mp_bar.max_value = max_mana
+	mp_bar.value = current_mana

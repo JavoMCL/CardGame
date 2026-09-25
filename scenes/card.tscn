@@ -606,7 +606,7 @@ script = ExtResource("1_sy11y")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_j7avg")
-animation = &"Default"
+animation = &"Bastos7"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_17cq0")
