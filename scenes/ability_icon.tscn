@@ -103,6 +103,7 @@ animations = [{
 }]
 
 [node name="AbilityIcon" type="Control"]
+custom_minimum_size = Vector2(16, 16)
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -113,4 +114,11 @@ script = ExtResource("1_yidk5")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_vbo0v")
-animation = &"regeneration"
+animation = &"sum"
+
+[node name="InfoLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = -9.0
+offset_top = 25.0
+offset_right = 31.0
+offset_bottom = 48.0

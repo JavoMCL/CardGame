@@ -14,6 +14,7 @@ const DEAL_DELAY := 0.3
 var cards: Array = []
 var pending_extra_card: Array = []
 var discard_mode: bool = false
+var reveal_mode: bool = false # true for the player (cards shown face up), false for the opponent
 
 func _ready() -> void:
 	card1.clicked.connect(_on_card_clicked.bind(0))
@@ -24,6 +25,7 @@ func receive_cards(c1: Array, c2: Array, reveal: bool = false) -> void:
 	cards.clear()
 	pending_extra_card = []
 	discard_mode = false
+	reveal_mode = reveal
 	result_label.text = ""
 
 	card1.visible = false
@@ -75,6 +77,7 @@ func reveal_extra_card() -> void:
 	pending_extra_card = []
 
 func reveal_all() -> void:
+	reveal_mode = true
 	reveal_initial_cards()
 	reveal_extra_card()
 
@@ -92,7 +95,6 @@ func card_count() -> int:
 func has_third_card() -> bool:
 	return cards.size() >= 3
 
-# Pure scoring function, usable on hypothetical hands (AI evaluation, discard preview, etc.)
 static func score_for(card_list: Array, special_trio_value: int) -> int:
 	var all_face: bool = card_list.size() == 3
 	if all_face:
@@ -143,13 +145,24 @@ func _refresh_card_display() -> void:
 
 	if cards.size() > 0:
 		card1.visible = true
-		card1.show_card(cards[0][0], cards[0][1])
+		if reveal_mode:
+			card1.show_card(cards[0][0], cards[0][1])
+		else:
+			card1.show_face_down()
+
 	if cards.size() > 1:
 		card2.visible = true
-		card2.show_card(cards[1][0], cards[1][1])
+		if reveal_mode:
+			card2.show_card(cards[1][0], cards[1][1])
+		else:
+			card2.show_face_down()
+
 	if cards.size() > 2:
 		card3.visible = true
-		card3.show_card(cards[2][0], cards[2][1])
+		if reveal_mode:
+			card3.show_card(cards[2][0], cards[2][1])
+		else:
+			card3.show_face_down()
 
 # --- Clairvoyance preview ---
 
