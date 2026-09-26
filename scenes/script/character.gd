@@ -9,6 +9,7 @@ signal defeated
 @export var max_mana: int = 50
 @export var portrait_texture: Texture2D
 @export var card_area_path: NodePath
+@export var ability_icon_scene: PackedScene
 
 @onready var portrait: TextureRect = $Portrait
 @onready var hp_label: Label = $HpLabel
@@ -16,6 +17,7 @@ signal defeated
 @onready var skill_sprite: AnimatedSprite2D = $SkillSprite
 @onready var mana_bar: TextureProgressBar = $MpBar
 @onready var health_bar: TextureProgressBar = $HpBar
+@onready var abilities_row: HBoxContainer = $AbilitiesRow
 
 const DEFENSE_COST := 20
 const DAMAGE_COST := 20
@@ -28,6 +30,9 @@ var current_mana: int
 var card_area: Node2D
 
 var pending_skill: String = "none"
+var abilities: Array[String] = []
+var sum_streak: int = 0
+var has_discarded_this_round: bool = false
 
 func _ready() -> void:
 	current_hp = max_hp
@@ -105,21 +110,30 @@ func gain_mana(amount: int) -> void:
 		_update_mana_bar()
 		mana_changed.emit(current_mana)
 
+func _get_skill_cost(skill_name: String) -> int:
+	var base_cost: int
+	match skill_name:
+		"defense":
+			base_cost = DEFENSE_COST
+		"damage":
+			base_cost = DAMAGE_COST
+		"heal":
+			base_cost = HEAL_COST
+		_:
+			return 0
+
+	if has_ability("spare"):
+		return int(base_cost / 2.0)
+	return base_cost
+
 func use_skill(skill_name: String) -> bool:
 	if pending_skill != "none":
 		return false
 
-	var cost: int
+	if not (skill_name == "defense" or skill_name == "damage" or skill_name == "heal"):
+		return false
 
-	match skill_name:
-		"defense":
-			cost = DEFENSE_COST
-		"damage":
-			cost = DAMAGE_COST
-		"heal":
-			cost = HEAL_COST
-		_:
-			return false
+	var cost: int = _get_skill_cost(skill_name)
 
 	if not can_afford(cost):
 		return false
@@ -149,6 +163,10 @@ func clear_pending_skill() -> void:
 	pending_skill = "none"
 	skill_sprite.visible = false
 
+func reset_round_state() -> void:
+	clear_pending_skill()
+	has_discarded_this_round = false
+
 func _update_hp_label() -> void:
 	hp_label.text = "HP: %d" % current_hp
 
@@ -160,3 +178,35 @@ func _update_hp_bar() -> void:
 
 func _update_mana_bar() -> void:
 	mana_bar.value = current_mana
+
+# --- Special abilities ---
+
+func has_ability(id: String) -> bool:
+	return abilities.has(id)
+
+func set_abilities(new_abilities: Array) -> void:
+	abilities.clear()
+	for id in new_abilities:
+		abilities.append(id)
+	_refresh_ability_icons()
+
+func reset_sum_streak() -> void:
+	sum_streak = 0
+
+func apply_regeneration(won_round: bool) -> void:
+	if not has_ability("regeneration"):
+		return
+	heal(2 if won_round else 1)
+
+func _refresh_ability_icons() -> void:
+	for child in abilities_row.get_children():
+		child.queue_free()
+
+	if ability_icon_scene == null:
+		return
+
+	for id in abilities:
+		var icon: Control = ability_icon_scene.instantiate()
+		abilities_row.add_child(icon)
+		if icon.has_method("set_ability"):
+			icon.set_ability(id)

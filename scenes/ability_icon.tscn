@@ -1,0 +1,116 @@
+[gd_scene load_steps=12 format=3 uid="uid://bhqj5r628uw1q"]
+
+[ext_resource type="Texture2D" uid="uid://chvo56ix535c8" path="res://tiles/SpecialSkills.png" id="1_3byyd"]
+[ext_resource type="Script" uid="uid://dsm7r7me5wphm" path="res://scenes/script/ability_icon.gd" id="1_yidk5"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yidk5"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ghhst"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(32, 16, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c4swn"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(0, 16, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3w5rt"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(16, 32, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e420b"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s05s1"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(16, 16, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lsd3e"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bjsau"]
+atlas = ExtResource("1_3byyd")
+region = Rect2(0, 32, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_vbo0v"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yidk5")
+}],
+"loop": true,
+"name": &"clairvoyance",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ghhst")
+}],
+"loop": true,
+"name": &"discard",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_c4swn")
+}],
+"loop": true,
+"name": &"regeneration",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3w5rt")
+}],
+"loop": true,
+"name": &"spare",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e420b")
+}],
+"loop": true,
+"name": &"stronger",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s05s1")
+}],
+"loop": true,
+"name": &"sum",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lsd3e")
+}],
+"loop": true,
+"name": &"tank",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bjsau")
+}],
+"loop": true,
+"name": &"thief",
+"speed": 5.0
+}]
+
+[node name="AbilityIcon" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_yidk5")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_vbo0v")
+animation = &"regeneration"

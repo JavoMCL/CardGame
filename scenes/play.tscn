@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=4 uid="uid://b6jqwcxv4tedv"]
+[gd_scene load_steps=15 format=4 uid="uid://b6jqwcxv4tedv"]
 
 [ext_resource type="PackedScene" uid="uid://ct8hrbhdcwyvo" path="res://scenes/mazo.tscn" id="1_bofkp"]
 [ext_resource type="Script" uid="uid://cjygwm3qcx5ei" path="res://scenes/script/play.gd" id="1_bq38n"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://ovpot64n6r3l" path="res://tiles/Default.png" id="4_hsi3f"]
 [ext_resource type="PackedScene" uid="uid://dfw61i62c086h" path="res://scenes/character.tscn" id="5_65v2a"]
 [ext_resource type="PackedScene" uid="uid://dsm1wnrx876xl" path="res://scenes/end_menu.tscn" id="6_j27tm"]
+[ext_resource type="PackedScene" uid="uid://bhqj5r628uw1q" path="res://scenes/ability_icon.tscn" id="7_e1qq8"]
 [ext_resource type="Texture2D" uid="uid://bqo86eur1rh7p" path="res://tiles/Portrait Rival.png" id="7_efqae"]
 [ext_resource type="Texture2D" uid="uid://e36hhcqrwvaf" path="res://tiles/Portrait.png" id="8_e1qq8"]
 
@@ -73,6 +74,7 @@ offset_right = 550.0
 offset_bottom = 100.0
 portrait_texture = ExtResource("7_efqae")
 card_area_path = NodePath("../../OpponentArea")
+ability_icon_scene = ExtResource("7_e1qq8")
 
 [node name="PlayerCharacter" parent="CanvasLayer" instance=ExtResource("5_65v2a")]
 offset_left = 501.0
@@ -81,6 +83,7 @@ offset_right = 541.0
 offset_bottom = 566.0
 portrait_texture = ExtResource("8_e1qq8")
 card_area_path = NodePath("../../PlayerArea")
+ability_icon_scene = ExtResource("7_e1qq8")
 
 [node name="DefenseSkillButton" type="Button" parent="CanvasLayer"]
 offset_left = 274.0
@@ -113,6 +116,13 @@ offset_right = 347.0
 offset_bottom = 357.0
 texture_normal = SubResource("AtlasTexture_efqae")
 texture_hover = SubResource("AtlasTexture_e1qq8")
+
+[node name="DiscardSkillButton" type="Button" parent="CanvasLayer"]
+offset_left = 925.0
+offset_top = 470.0
+offset_right = 1002.0
+offset_bottom = 501.0
+text = "DISCARD"
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(578, 324)

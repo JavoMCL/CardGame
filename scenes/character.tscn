@@ -103,3 +103,9 @@ tint_progress = Color(0.129412, 0.545098, 1, 1)
 position = Vector2(101, 53)
 sprite_frames = SubResource("SpriteFrames_rkhd4")
 animation = &"heal"
+
+[node name="AbilitiesRow" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_top = -16.0
+offset_right = 40.0
+offset_bottom = 24.0
