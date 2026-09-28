@@ -14,8 +14,8 @@ const DEAL_DELAY := 0.3
 const HOVER_TINT := Color(1.3, 1.3, 1.3, 1.0)
 const SELECTED_TINT := Color(1.6, 1.6, 0.8, 1.0)
 
-var cards: Array = [] # each element is [suit, value]
-var reveal_mode: bool = false # true = face up (player), false = face down (opponent)
+var cards: Array = []
+var reveal_mode: bool = false
 var preview_active: bool = false
 var selection_enabled: bool = false
 var selected_index: int = -1
@@ -26,23 +26,24 @@ func _ready() -> void:
 	set_process_input(false)
 
 
-# --- Dealing ---
-
-func receive_cards(c1: Array, c2: Array, reveal: bool = false) -> void:
+func start_hand(reveal: bool) -> void:
 	set_selection_enabled(false)
 	cards.clear()
 	reveal_mode = reveal
 	preview_active = false
 	result_label.text = ""
+	result_label.modulate = Color.WHITE
 	_hide_all()
 
-	cards.append(c1)
-	cards.append(c2)
 
-	await _deal_card(0)
-	await _deal_card(1)
+func deal_next(card: Array) -> void:
+	cards.append(card)
+	var index: int = cards.size() - 1
+	await _deal_card(index)
 
-	if reveal:
+
+func finish_hand() -> void:
+	if reveal_mode:
 		_show_hand()
 
 
@@ -50,10 +51,10 @@ func _deal_card(index: int) -> void:
 	var node: Card = _card_node(index)
 	node.show_face_down()
 	node.visible = true
+	SoundManager.play_deal_card()
 	await get_tree().create_timer(DEAL_DELAY).timeout
 
 
-# Player's hit: the card appears face down, then flips after a short delay.
 func add_extra_card(c3: Array) -> void:
 	if cards.size() >= 3:
 		return
@@ -64,23 +65,23 @@ func add_extra_card(c3: Array) -> void:
 	_show_hand()
 
 
-# Opponent's hit: the card appears face down immediately.
 func decide_extra_card(c3: Array) -> void:
 	if cards.size() >= 3:
 		return
 	cards.append(c3)
+	var index: int = cards.size() - 1
+	var node: Card = _card_node(index)
+	node.show_face_down()
+	node.visible = true
+	SoundManager.play_deal_card()
 	_show_hand()
 
 
-# Flips everything face up (used for the opponent when the round ends).
 func reveal_all() -> void:
 	reveal_mode = true
 	_show_hand()
 
 
-# --- Rendering ---
-
-# Single place that draws the whole hand, face up or face down depending on reveal_mode.
 func _show_hand() -> void:
 	for i in range(3):
 		var node: Card = _card_node(i)
@@ -115,8 +116,6 @@ func _card_node(index: int) -> Card:
 			return card2
 	return card3
 
-
-# --- Score ---
 
 func is_special_trio() -> bool:
 	if cards.size() != 3:
@@ -159,10 +158,13 @@ func calculate_score() -> int:
 
 
 func show_result() -> void:
-	result_label.text = "Total: %d" % calculate_score()
+	result_label.modulate = Color.WHITE
+	result_label.text = str(calculate_score())
 
 
-# --- Card selection (Discard ability) ---
+func get_total_label() -> Label:
+	return result_label
+
 
 func set_selection_enabled(enabled: bool) -> void:
 	if selection_enabled == enabled:
@@ -218,7 +220,7 @@ func _input(event: InputEvent) -> void:
 
 	var index: int = _card_index_at_mouse()
 	if index == -1:
-		return # clicking elsewhere (e.g. the Discard button) keeps the selection
+		return
 
 	selected_index = -1 if index == selected_index else index
 	selection_changed.emit()
@@ -240,9 +242,6 @@ func discard_at(index: int) -> void:
 	discard_performed.emit()
 
 
-# --- Clairvoyance preview ---
-
-# Shows the next deck card, darkened, in the first free slot.
 func show_preview(next_card: Array) -> void:
 	if cards.size() >= 3 or next_card.is_empty():
 		return
@@ -270,3 +269,4 @@ func reset() -> void:
 	preview_active = false
 	_hide_all()
 	result_label.text = ""
+	result_label.modulate = Color.WHITE

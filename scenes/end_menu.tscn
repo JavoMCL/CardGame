@@ -27,10 +27,12 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="Panel"]
 layout_mode = 0
-offset_left = 47.0
+offset_left = 1.0
 offset_top = 1.0
-offset_right = 129.0
+offset_right = 178.0
 offset_bottom = 35.0
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="NextButton" type="Button" parent="Panel"]
 layout_mode = 0

@@ -16,6 +16,25 @@ extends Node2D
 @onready var deck_count_label: Label = $CanvasLayer/DeckCountLabel
 @onready var end_menu: Control = $CanvasLayer/EndMenu
 
+@onready var damage_flash: ColorRect = $CanvasLayer/DamageFlash
+@onready var camera: Camera2D = $Camera2D
+
+const FLASH_MAX_ALPHA := 0.55
+const FLASH_DURATION := 0.25
+const SHAKE_STRENGTH := 16.0
+const SHAKE_DURATION := 0.3
+const SHAKE_STEPS := 6
+
+const COUNT_STEP_INTERVAL := 0.06
+const COUNTDOWN_START_DELAY := 1.0
+const WINNER_LABEL_DELAY := 1.0
+const ATTACK_DELAY := 1.0
+const OPPONENT_THINK_DELAY := 1.0
+
+const PLAYER_WINS_COLOR := Color(0.3, 1.0, 0.3)
+const PLAYER_LOSES_COLOR := Color(1.0, 0.3, 0.3)
+const DRAW_COLOR := Color.WHITE
+
 const NINE_SCORE := 9
 const ROUND_WIN_MANA := 10
 const OPPONENT_HEAL_CHANCE := 0.2
@@ -32,6 +51,7 @@ var combat_over: bool = false
 var current_fight: int = 1
 var is_paused: bool = false
 var ability_pool: Array[String] = []
+var skill_window_open: bool = false
 
 
 func _ready() -> void:
@@ -43,6 +63,13 @@ func _ready() -> void:
 	heal_skill_button.pressed.connect(_on_heal_skill_pressed)
 	discard_skill_button.pressed.connect(_on_discard_skill_pressed)
 
+	play_button.pressed.connect(_play_click_sound)
+	discard_skill_button.pressed.connect(_play_click_sound)
+
+	defense_skill_button.pressed.connect(_play_magic_cast_sound)
+	damage_skill_button.pressed.connect(_play_magic_cast_sound)
+	heal_skill_button.pressed.connect(_play_magic_cast_sound)
+
 	hit_button.mouse_entered.connect(_on_hit_mouse_entered)
 	hit_button.mouse_exited.connect(_on_hit_mouse_exited)
 
@@ -50,6 +77,7 @@ func _ready() -> void:
 
 	player_character.defeated.connect(_on_character_defeated)
 	opponent_character.defeated.connect(_on_character_defeated)
+	player_character.mana_changed.connect(_on_player_mana_changed)
 	player_area.discard_performed.connect(_on_player_discard_performed)
 	player_area.selection_changed.connect(_on_player_selection_changed)
 	discard_skill_button.visible = false
@@ -62,8 +90,24 @@ func _ready() -> void:
 	_setup_ability_pool()
 	_assign_abilities_for_fight()
 
+	damage_flash.modulate.a = 0.0
+	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	winner_label.set_anchors_preset(Control.PRESET_CENTER)
+	winner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	winner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	winner_label.add_theme_color_override("font_color", DRAW_COLOR)
+
 	_reset_round()
 	_update_deck_label(deck.cards_remaining())
+
+
+func _play_click_sound() -> void:
+	SoundManager.play_click()
+
+
+func _play_magic_cast_sound() -> void:
+	SoundManager.play_magic_cast()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -113,6 +157,7 @@ func _on_continue_pressed() -> void:
 
 func _on_card_dealt(remaining: int) -> void:
 	_update_deck_label(remaining)
+	SoundManager.play_deal_card()
 
 
 func _update_deck_label(remaining: int) -> void:
@@ -142,22 +187,27 @@ func _start_round() -> void:
 	_close_discard_window()
 
 	winner_label.text = ""
+	winner_label.modulate.a = 0.0
 	round_active = true
 
 	player_character.reset_round_state()
 	opponent_character.reset_round_state()
 
-	player_area.receive_cards(
-		deck.deal(),
-		deck.deal(),
-		true
-	)
+	player_area.start_hand(true)
+	opponent_area.start_hand(false)
 
-	await opponent_area.receive_cards(
-		deck.deal(),
-		deck.deal(),
-		false
-	)
+	var p1: Array = deck.deal()
+	var o1: Array = deck.deal()
+	var p2: Array = deck.deal()
+	var o2: Array = deck.deal()
+
+	await player_area.deal_next(p1)
+	await opponent_area.deal_next(o1)
+	await player_area.deal_next(p2)
+	await opponent_area.deal_next(o2)
+
+	player_area.finish_hand()
+	opponent_area.finish_hand()
 
 	_opponent_decide()
 
@@ -210,15 +260,27 @@ func _try_use_player_skill(skill_name: String) -> void:
 
 
 func _disable_skill_buttons() -> void:
+	skill_window_open = false
 	defense_skill_button.disabled = true
 	damage_skill_button.disabled = true
 	heal_skill_button.disabled = true
 
 
 func _enable_skill_buttons() -> void:
-	defense_skill_button.disabled = false
-	damage_skill_button.disabled = false
-	heal_skill_button.disabled = false
+	skill_window_open = true
+	_refresh_skill_buttons()
+
+
+func _refresh_skill_buttons() -> void:
+	if not skill_window_open:
+		return
+	defense_skill_button.disabled = not player_character.can_use_skill("defense")
+	damage_skill_button.disabled = not player_character.can_use_skill("damage")
+	heal_skill_button.disabled = not player_character.can_use_skill("heal")
+
+
+func _on_player_mana_changed(_new_mana: int) -> void:
+	_refresh_skill_buttons()
 
 
 func _on_discard_skill_pressed() -> void:
@@ -253,18 +315,27 @@ func _on_player_selection_changed() -> void:
 	discard_skill_button.visible = player_area.has_selection()
 
 
+func _opponent_use_skill(skill_name: String) -> bool:
+	if opponent_character.use_skill(skill_name):
+		SoundManager.play_magic_cast()
+		return true
+	return false
+
+
 func _opponent_decide() -> void:
+	await get_tree().create_timer(OPPONENT_THINK_DELAY).timeout
+
 	var initial_score: int = opponent_area.calculate_score()
 
 	if opponent_character.current_hp < opponent_character.max_hp - OPPONENT_HEAL_HP_THRESHOLD \
 			and randf() < OPPONENT_HEAL_CHANCE:
-		opponent_character.use_skill("heal")
+		_opponent_use_skill("heal")
 
 	elif initial_score >= 7:
-		opponent_character.use_skill("damage")
+		_opponent_use_skill("damage")
 
 	elif initial_score <= 5:
-		opponent_character.use_skill("defense")
+		_opponent_use_skill("defense")
 
 	_opponent_try_discard()
 
@@ -316,13 +387,29 @@ func _on_stand_pressed() -> void:
 	player_area.show_result()
 	opponent_area.show_result()
 
+	_set_button_disabled(play_button, true)
 	_set_button_disabled(hit_button, true)
 	_disable_skill_buttons()
 	_close_discard_window()
 
 	var result: Dictionary = resolve_combat()
 
+	winner_label.text = ""
+	winner_label.modulate.a = 0.0
+
+	await get_tree().create_timer(COUNTDOWN_START_DELAY).timeout
+
+	var player_score: int = player_character.get_score()
+	var opponent_score: int = opponent_character.get_score()
+	await _animate_score_countdown(player_score, opponent_score, result["winner"])
+
+	await get_tree().create_timer(WINNER_LABEL_DELAY).timeout
+
 	winner_label.text = result["message"]
+	_apply_winner_label_color(result["winner"])
+	winner_label.modulate.a = 1.0
+
+	await get_tree().create_timer(ATTACK_DELAY).timeout
 
 	_apply_damage(result)
 	_apply_round_mana(result)
@@ -335,6 +422,47 @@ func _on_stand_pressed() -> void:
 
 	play_button.text = "Next round"
 	_set_button_disabled(play_button, false)
+
+
+func _apply_winner_label_color(winner: String) -> void:
+	match winner:
+		"player":
+			winner_label.add_theme_color_override("font_color", PLAYER_WINS_COLOR)
+		"opponent":
+			winner_label.add_theme_color_override("font_color", PLAYER_LOSES_COLOR)
+		_:
+			winner_label.add_theme_color_override("font_color", DRAW_COLOR)
+
+
+func _animate_score_countdown(player_score: int, opponent_score: int, winner: String) -> void:
+	var player_score_label: Label = player_area.get_total_label()
+	var opponent_score_label: Label = opponent_area.get_total_label()
+
+	player_score_label.text = str(player_score)
+	opponent_score_label.text = str(opponent_score)
+	player_score_label.modulate = Color.WHITE
+	opponent_score_label.modulate = Color.WHITE
+
+	var p := player_score
+	var o := opponent_score
+
+	while p > 0 and o > 0:
+		await get_tree().create_timer(COUNT_STEP_INTERVAL).timeout
+		p -= 1
+		o -= 1
+		player_score_label.text = str(p)
+		opponent_score_label.text = str(o)
+		SoundManager.play_score_count()
+
+	match winner:
+		"player":
+			player_score_label.modulate = Color(0.35, 1.0, 0.35)
+			opponent_score_label.modulate = Color(1.0, 0.35, 0.35)
+		"opponent":
+			opponent_score_label.modulate = Color(0.35, 1.0, 0.35)
+			player_score_label.modulate = Color(1.0, 0.35, 0.35)
+		_:
+			pass
 
 
 func resolve_combat() -> Dictionary:
@@ -355,34 +483,35 @@ func resolve_combat() -> Dictionary:
 	var ignore_defense: bool = false
 
 	if player_score == opponent_score:
-		var player_cards: int = player_character.get_card_count()
-		var opponent_cards: int = opponent_character.get_card_count()
-
-		if player_cards == opponent_cards:
-			if player_character.has_ability("stronger"):
-				winner = "player"
-				winner_score = player_score
-				loser_score = opponent_score
-				ignore_defense = true
-			elif opponent_character.has_ability("stronger"):
-				winner = "opponent"
-				winner_score = opponent_score
-				loser_score = player_score
-				ignore_defense = true
-			else:
-				return {"winner": "draw", "damage": 0, "message": "Draw"}
-		elif player_cards < opponent_cards:
+		# Stronger wins any tie outright, regardless of card count.
+		if player_character.has_ability("stronger"):
 			winner = "player"
 			winner_score = player_score
 			loser_score = opponent_score
-			suffix = " (fewer cards)"
 			ignore_defense = true
-		else:
+		elif opponent_character.has_ability("stronger"):
 			winner = "opponent"
 			winner_score = opponent_score
 			loser_score = player_score
-			suffix = " (fewer cards)"
 			ignore_defense = true
+		else:
+			var player_cards: int = player_character.get_card_count()
+			var opponent_cards: int = opponent_character.get_card_count()
+
+			if player_cards == opponent_cards:
+				return {"winner": "draw", "damage": 0, "message": "Draw"}
+			elif player_cards < opponent_cards:
+				winner = "player"
+				winner_score = player_score
+				loser_score = opponent_score
+				suffix = " (fewer cards)"
+				ignore_defense = true
+			else:
+				winner = "opponent"
+				winner_score = opponent_score
+				loser_score = player_score
+				suffix = " (fewer cards)"
+				ignore_defense = true
 	elif player_score > opponent_score:
 		winner = "player"
 		winner_score = player_score
@@ -441,10 +570,47 @@ func _build_result(
 
 
 func _apply_damage(result: Dictionary) -> void:
+	if result["damage"] <= 0:
+		return
+
+	SoundManager.play_damage()
+
+	var player_receives_damage: bool = result["winner"] == "opponent"
+	_play_hit_effect(player_receives_damage)
+
 	if result["winner"] == "player":
 		opponent_character.take_damage(result["damage"])
 	elif result["winner"] == "opponent":
 		player_character.take_damage(result["damage"])
+
+
+func _play_hit_effect(flash: bool) -> void:
+	if flash:
+		_flash_screen()
+	_shake_camera()
+
+
+func _flash_screen() -> void:
+	damage_flash.modulate.a = FLASH_MAX_ALPHA
+	var tween := create_tween()
+	tween.tween_property(damage_flash, "modulate:a", 0.0, FLASH_DURATION)
+
+
+func _shake_camera() -> void:
+	if camera == null:
+		return
+
+	var tween := create_tween()
+	var step_time: float = SHAKE_DURATION / SHAKE_STEPS
+
+	for i in SHAKE_STEPS:
+		var offset := Vector2(
+			randf_range(-SHAKE_STRENGTH, SHAKE_STRENGTH),
+			randf_range(-SHAKE_STRENGTH, SHAKE_STRENGTH)
+		)
+		tween.tween_property(camera, "offset", offset, step_time)
+
+	tween.tween_property(camera, "offset", Vector2.ZERO, step_time)
 
 
 func _apply_round_mana(result: Dictionary) -> void:
@@ -572,6 +738,10 @@ func _start_new_fight() -> void:
 	opponent_character.reset_sum_streak()
 	opponent_character.reset_round_state()
 
+	if deck.has_method("reset_deck"):
+		deck.reset_deck()
+	_update_deck_label(deck.cards_remaining())
+
 	combat_over = false
 	_reset_round()
 
@@ -591,3 +761,5 @@ func _reset_round() -> void:
 	_close_discard_window()
 
 	winner_label.text = ""
+	winner_label.modulate.a = 0.0
+	winner_label.add_theme_color_override("font_color", DRAW_COLOR)

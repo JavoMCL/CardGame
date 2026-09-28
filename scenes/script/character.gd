@@ -5,7 +5,7 @@ signal mana_changed(new_mana: int)
 signal defeated
 
 @export var character_name: String = "Character"
-@export var max_hp: int = 30
+@export var max_hp: int = 50
 @export var max_mana: int = 50
 @export var portrait_texture: Texture2D
 @export var card_area_path: NodePath
@@ -125,6 +125,11 @@ func _get_skill_cost(skill_name: String) -> int:
 	if has_ability("spare"):
 		return int(base_cost / 2.0)
 	return base_cost
+
+func can_use_skill(skill_name: String) -> bool:
+	if pending_skill != "none":
+		return false
+	return can_afford(_get_skill_cost(skill_name))
 
 func use_skill(skill_name: String) -> bool:
 	if pending_skill != "none":

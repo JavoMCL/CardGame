@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 Abilities="*res://scenes/abilities.tscn"
+SoundManager="*res://scenes/sound_manager.tscn"
 
 [dotnet]
 
