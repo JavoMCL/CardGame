@@ -67,17 +67,17 @@ mouse_filter = 2
 
 [node name="HpLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 41.0
-offset_top = 1.0
-offset_right = 81.0
-offset_bottom = 24.0
+offset_left = 45.0
+offset_top = 6.0
+offset_right = 90.0
+offset_bottom = 29.0
 
 [node name="ManaLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 41.0
-offset_top = 23.0
-offset_right = 81.0
-offset_bottom = 46.0
+offset_left = 45.0
+offset_top = 29.0
+offset_right = 90.0
+offset_bottom = 52.0
 
 [node name="HpBar" type="TextureProgressBar" parent="."]
 layout_mode = 0

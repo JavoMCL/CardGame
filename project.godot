@@ -22,6 +22,10 @@ Abilities="*res://scenes/abilities.tscn"
 
 project/assembly_name="New Game Project"
 
+[gui]
+
+theme/custom="uid://dcptmvfyi538u"
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
