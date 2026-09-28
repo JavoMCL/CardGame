@@ -2,84 +2,121 @@ class_name CardArea
 extends Node2D
 
 signal discard_performed
+signal selection_changed
 
-@onready var card1: StaticBody2D = $Card1
-@onready var card2: StaticBody2D = $Card2
-@onready var card3: StaticBody2D = $Card3
+@onready var card1: Card = $Card1
+@onready var card2: Card = $Card2
+@onready var card3: Card = $Card3
 @onready var result_label: Label = $ResultLabel
 
 const SPECIAL_TRIO_VALUE := 15
 const DEAL_DELAY := 0.3
+const HOVER_TINT := Color(1.3, 1.3, 1.3, 1.0)
+const SELECTED_TINT := Color(1.6, 1.6, 0.8, 1.0)
 
-var cards: Array = []
-var pending_extra_card: Array = []
-var discard_mode: bool = false
-var reveal_mode: bool = false # true for the player (cards shown face up), false for the opponent
+var cards: Array = [] # each element is [suit, value]
+var reveal_mode: bool = false # true = face up (player), false = face down (opponent)
+var preview_active: bool = false
+var selection_enabled: bool = false
+var selected_index: int = -1
+
 
 func _ready() -> void:
-	card1.clicked.connect(_on_card_clicked.bind(0))
-	card2.clicked.connect(_on_card_clicked.bind(1))
-	card3.clicked.connect(_on_card_clicked.bind(2))
+	set_process(false)
+	set_process_input(false)
+
+
+# --- Dealing ---
 
 func receive_cards(c1: Array, c2: Array, reveal: bool = false) -> void:
+	set_selection_enabled(false)
 	cards.clear()
-	pending_extra_card = []
-	discard_mode = false
 	reveal_mode = reveal
+	preview_active = false
 	result_label.text = ""
-
-	card1.visible = false
-	card2.visible = false
-	card3.visible = false
-	card3.modulate = Color.WHITE
+	_hide_all()
 
 	cards.append(c1)
 	cards.append(c2)
 
-	await _deal_card(card1)
-	await _deal_card(card2)
+	await _deal_card(0)
+	await _deal_card(1)
 
 	if reveal:
-		reveal_initial_cards()
+		_show_hand()
 
-func _deal_card(card_node: StaticBody2D) -> void:
-	card_node.show_face_down()
-	card_node.visible = true
+
+func _deal_card(index: int) -> void:
+	var node: Card = _card_node(index)
+	node.show_face_down()
+	node.visible = true
 	await get_tree().create_timer(DEAL_DELAY).timeout
 
-func reveal_initial_cards() -> void:
-	if cards.size() > 0:
-		card1.show_card(cards[0][0], cards[0][1])
-	if cards.size() > 1:
-		card2.show_card(cards[1][0], cards[1][1])
 
+# Player's hit: the card appears face down, then flips after a short delay.
 func add_extra_card(c3: Array) -> void:
 	if cards.size() >= 3:
 		return
+	clear_preview()
 	cards.append(c3)
-	card3.modulate = Color.WHITE
-	await _deal_card(card3)
-	card3.show_card(c3[0], c3[1])
+	var index: int = cards.size() - 1
+	await _deal_card(index)
+	_show_hand()
 
+
+# Opponent's hit: the card appears face down immediately.
 func decide_extra_card(c3: Array) -> void:
 	if cards.size() >= 3:
 		return
 	cards.append(c3)
-	pending_extra_card = c3
-	card3.modulate = Color.WHITE
-	card3.show_face_down()
-	card3.visible = true
+	_show_hand()
 
-func reveal_extra_card() -> void:
-	if pending_extra_card.is_empty():
-		return
-	card3.show_card(pending_extra_card[0], pending_extra_card[1])
-	pending_extra_card = []
 
+# Flips everything face up (used for the opponent when the round ends).
 func reveal_all() -> void:
 	reveal_mode = true
-	reveal_initial_cards()
-	reveal_extra_card()
+	_show_hand()
+
+
+# --- Rendering ---
+
+# Single place that draws the whole hand, face up or face down depending on reveal_mode.
+func _show_hand() -> void:
+	for i in range(3):
+		var node: Card = _card_node(i)
+		node.modulate = Color.WHITE
+		node.set_tint(Color.WHITE)
+
+		if i < cards.size():
+			node.visible = true
+			if reveal_mode:
+				node.show_card(cards[i][0], cards[i][1])
+			else:
+				node.show_face_down()
+		else:
+			node.visible = false
+
+	preview_active = false
+
+
+func _hide_all() -> void:
+	for i in range(3):
+		var node: Card = _card_node(i)
+		node.visible = false
+		node.modulate = Color.WHITE
+		node.set_tint(Color.WHITE)
+
+
+func _card_node(index: int) -> Card:
+	match index:
+		0:
+			return card1
+		1:
+			return card2
+	return card3
+
+
+# --- Score ---
 
 func is_special_trio() -> bool:
 	if cards.size() != 3:
@@ -89,11 +126,14 @@ func is_special_trio() -> bool:
 			return false
 	return true
 
+
 func card_count() -> int:
 	return cards.size()
 
+
 func has_third_card() -> bool:
 	return cards.size() >= 3
+
 
 static func score_for(card_list: Array, special_trio_value: int) -> int:
 	var all_face: bool = card_list.size() == 3
@@ -113,77 +153,120 @@ static func score_for(card_list: Array, special_trio_value: int) -> int:
 		total -= 9
 	return total
 
+
 func calculate_score() -> int:
 	return score_for(cards, SPECIAL_TRIO_VALUE)
+
 
 func show_result() -> void:
 	result_label.text = "Total: %d" % calculate_score()
 
-# --- Discard ability ---
 
-func enable_discard_mode() -> void:
-	discard_mode = true
+# --- Card selection (Discard ability) ---
 
-func _on_card_clicked(index: int) -> void:
-	if not discard_mode:
+func set_selection_enabled(enabled: bool) -> void:
+	if selection_enabled == enabled:
 		return
-	discard_at(index)
+
+	selection_enabled = enabled
+	set_process(enabled)
+	set_process_input(enabled)
+
+	if not enabled:
+		_clear_selection()
+		for i in range(3):
+			_card_node(i).set_tint(Color.WHITE)
+
+
+func has_selection() -> bool:
+	return selected_index != -1
+
+
+func _clear_selection() -> void:
+	if selected_index == -1:
+		return
+	selected_index = -1
+	selection_changed.emit()
+
+
+func _card_index_at_mouse() -> int:
+	var mouse_pos: Vector2 = get_global_mouse_position()
+	for i in range(cards.size() - 1, -1, -1):
+		var node: Card = _card_node(i)
+		if node.visible and node.get_global_hit_rect().has_point(mouse_pos):
+			return i
+	return -1
+
+
+func _process(_delta: float) -> void:
+	var hovered: int = _card_index_at_mouse()
+
+	for i in range(cards.size()):
+		var tint: Color = Color.WHITE
+		if i == selected_index:
+			tint = SELECTED_TINT
+		elif i == hovered:
+			tint = HOVER_TINT
+		_card_node(i).set_tint(tint)
+
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	if not event.pressed or event.button_index != MOUSE_BUTTON_LEFT:
+		return
+
+	var index: int = _card_index_at_mouse()
+	if index == -1:
+		return # clicking elsewhere (e.g. the Discard button) keeps the selection
+
+	selected_index = -1 if index == selected_index else index
+	selection_changed.emit()
+	get_viewport().set_input_as_handled()
+
+
+func discard_selected() -> void:
+	if selected_index != -1:
+		discard_at(selected_index)
+
 
 func discard_at(index: int) -> void:
 	if index < 0 or index >= cards.size():
 		return
+
 	cards.remove_at(index)
-	discard_mode = false
-	_refresh_card_display()
+	_clear_selection()
+	_show_hand()
 	discard_performed.emit()
 
-func _refresh_card_display() -> void:
-	card1.visible = false
-	card2.visible = false
-	card3.visible = false
-	card3.modulate = Color.WHITE
-
-	if cards.size() > 0:
-		card1.visible = true
-		if reveal_mode:
-			card1.show_card(cards[0][0], cards[0][1])
-		else:
-			card1.show_face_down()
-
-	if cards.size() > 1:
-		card2.visible = true
-		if reveal_mode:
-			card2.show_card(cards[1][0], cards[1][1])
-		else:
-			card2.show_face_down()
-
-	if cards.size() > 2:
-		card3.visible = true
-		if reveal_mode:
-			card3.show_card(cards[2][0], cards[2][1])
-		else:
-			card3.show_face_down()
 
 # --- Clairvoyance preview ---
 
+# Shows the next deck card, darkened, in the first free slot.
 func show_preview(next_card: Array) -> void:
 	if cards.size() >= 3 or next_card.is_empty():
 		return
-	card3.visible = true
-	card3.show_card(next_card[0], next_card[1])
-	card3.modulate = Color(0.4, 0.4, 0.4, 1.0)
+
+	var node: Card = _card_node(cards.size())
+	node.visible = true
+	node.show_card(next_card[0], next_card[1])
+	node.modulate = Color(0.4, 0.4, 0.4, 1.0)
+	preview_active = true
+
 
 func clear_preview() -> void:
-	if cards.size() < 3:
-		card3.visible = false
-	card3.modulate = Color.WHITE
+	if not preview_active:
+		return
+
+	var node: Card = _card_node(cards.size())
+	node.visible = false
+	node.modulate = Color.WHITE
+	preview_active = false
+
 
 func reset() -> void:
+	set_selection_enabled(false)
 	cards.clear()
-	pending_extra_card = []
-	discard_mode = false
-	card1.visible = false
-	card2.visible = false
-	card3.visible = false
-	card3.modulate = Color.WHITE
+	preview_active = false
+	_hide_all()
 	result_label.text = ""

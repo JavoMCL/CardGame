@@ -126,5 +126,8 @@ text = "DISCARD"
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(578, 324)
+limit_top = 0
+limit_right = 1152
+limit_bottom = 640
 
 [connection signal="pressed" from="CanvasLayer/PlayButton" to="." method="_on_boton_pressed"]

@@ -63,6 +63,7 @@ layout_mode = 0
 offset_top = 4.0
 offset_right = 40.0
 offset_bottom = 44.0
+mouse_filter = 2
 
 [node name="HpLabel" type="Label" parent="."]
 layout_mode = 0
@@ -84,6 +85,7 @@ offset_left = 93.0
 offset_top = 7.0
 offset_right = 158.0
 offset_bottom = 47.0
+mouse_filter = 2
 value = 100.0
 texture_under = SubResource("AtlasTexture_lrhn5")
 texture_progress = SubResource("AtlasTexture_my7n2")
@@ -94,6 +96,7 @@ offset_left = 92.0
 offset_top = 30.0
 offset_right = 157.0
 offset_bottom = 70.0
+mouse_filter = 2
 value = 100.0
 texture_under = SubResource("AtlasTexture_lrhn5")
 texture_progress = SubResource("AtlasTexture_my7n2")
@@ -107,6 +110,6 @@ animation = &"heal"
 [node name="AbilitiesRow" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_top = -12.0
-offset_right = 40.0
-offset_bottom = 28.0
-theme_override_constants/separation = 20
+offset_right = 17.0
+offset_bottom = 4.0
+theme_override_constants/separation = 16
