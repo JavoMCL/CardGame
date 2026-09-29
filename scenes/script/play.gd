@@ -6,12 +6,12 @@ extends Node2D
 @onready var player_character: Control = $CanvasLayer/PlayerCharacter
 @onready var opponent_character: Control = $CanvasLayer/OpponentCharacter
 
-@onready var play_button: Button = $CanvasLayer/PlayButton
+@onready var play_button: TextureButton = $CanvasLayer/PlayButton
 @onready var hit_button: TextureButton = $CanvasLayer/HitButton
-@onready var defense_skill_button: Button = $CanvasLayer/DefenseSkillButton
-@onready var damage_skill_button: Button = $CanvasLayer/DamageSkillButton
-@onready var heal_skill_button: Button = $CanvasLayer/HealSkillButton
-@onready var discard_skill_button: Button = $CanvasLayer/DiscardSkillButton
+@onready var defense_skill_button: TextureButton = $CanvasLayer/DefenseSkillButton
+@onready var damage_skill_button: TextureButton = $CanvasLayer/DamageSkillButton
+@onready var heal_skill_button: TextureButton = $CanvasLayer/HealSkillButton
+@onready var discard_skill_button: TextureButton = $CanvasLayer/DiscardSkillButton
 @onready var winner_label: Label = $CanvasLayer/WinnerLabel
 @onready var deck_count_label: Label = $CanvasLayer/DeckCountLabel
 @onready var end_menu: Control = $CanvasLayer/EndMenu
@@ -63,12 +63,11 @@ func _ready() -> void:
 	heal_skill_button.pressed.connect(_on_heal_skill_pressed)
 	discard_skill_button.pressed.connect(_on_discard_skill_pressed)
 
-	play_button.pressed.connect(_play_click_sound)
-	discard_skill_button.pressed.connect(_play_click_sound)
-
 	defense_skill_button.pressed.connect(_play_magic_cast_sound)
 	damage_skill_button.pressed.connect(_play_magic_cast_sound)
 	heal_skill_button.pressed.connect(_play_magic_cast_sound)
+
+	_connect_click_sounds()
 
 	hit_button.mouse_entered.connect(_on_hit_mouse_entered)
 	hit_button.mouse_exited.connect(_on_hit_mouse_exited)
@@ -100,6 +99,28 @@ func _ready() -> void:
 
 	_reset_round()
 	_update_deck_label(deck.cards_remaining())
+
+	SoundManager.start_fight_music()
+
+
+# Conecta el sonido de click a todos los TextureButton de la escena
+# (incluyendo los del EndMenu), excepto los de habilidades de maná
+# y el botón de pedir carta.
+func _connect_click_sounds() -> void:
+	var excluded_buttons: Array = [
+		hit_button,
+		defense_skill_button,
+		damage_skill_button,
+		heal_skill_button,
+	]
+
+	var all_buttons := find_children("*", "TextureButton", true, false)
+
+	for node in all_buttons:
+		var button := node as TextureButton
+		if button == null or button in excluded_buttons:
+			continue
+		button.pressed.connect(_play_click_sound)
 
 
 func _play_click_sound() -> void:
@@ -211,15 +232,24 @@ func _start_round() -> void:
 
 	_opponent_decide()
 
-	play_button.text = "Stand"
-
 	_set_button_disabled(play_button, false)
 	_set_button_disabled(hit_button, false)
 	_enable_skill_buttons()
 	_open_discard_window()
 
 	if player_character.has_ability("clairvoyance"):
-		player_area.show_preview(deck.peek_next())
+		_show_player_preview()
+
+
+func _show_player_preview() -> void:
+	if player_area.has_third_card():
+		return
+
+	var card: Array = deck.reserve_next()
+	if card.is_empty():
+		return
+
+	player_area.show_preview(card)
 
 
 func _on_hit_pressed() -> void:
@@ -229,7 +259,14 @@ func _on_hit_pressed() -> void:
 	_set_button_disabled(hit_button, true)
 	_disable_skill_buttons()
 
-	await player_area.add_extra_card(deck.deal())
+	var card: Array
+	if player_character.has_ability("clairvoyance") and deck.has_reservation:
+		card = deck.claim_reserved()
+		SoundManager.play_deal_card()
+	else:
+		card = deck.deal()
+
+	await player_area.add_extra_card(card)
 
 
 func _on_hit_mouse_entered() -> void:
@@ -297,7 +334,7 @@ func _on_player_discard_performed() -> void:
 	_close_discard_window()
 
 	if player_character.has_ability("clairvoyance") and not player_area.has_third_card():
-		player_area.show_preview(deck.peek_next())
+		_show_player_preview()
 
 
 func _open_discard_window() -> void:
@@ -343,18 +380,28 @@ func _opponent_decide() -> void:
 		return
 
 	var should_hit: bool = opponent_area.calculate_score() < 7
+	var reserved_for_opponent: bool = false
 
 	if opponent_character.has_ability("clairvoyance"):
-		var preview: Array = deck.peek_next()
-		if not preview.is_empty():
+		var preview: Array = deck.reserve_next()
+		reserved_for_opponent = not preview.is_empty()
+
+		if reserved_for_opponent:
 			var hypothetical: Array = opponent_area.cards.duplicate()
 			hypothetical.append(preview)
 			var hypothetical_score: int = CardArea.score_for(hypothetical, CardArea.SPECIAL_TRIO_VALUE)
 			should_hit = hypothetical_score > opponent_area.calculate_score()
 
 	if should_hit:
-		opponent_area.decide_extra_card(deck.deal())
+		var card: Array
+		if reserved_for_opponent:
+			card = deck.claim_reserved()
+		else:
+			card = deck.deal()
+		opponent_area.decide_extra_card(card)
 		_opponent_try_discard()
+	elif reserved_for_opponent:
+		deck.release_reservation()
 
 
 func _opponent_try_discard() -> void:
@@ -382,6 +429,10 @@ func _opponent_try_discard() -> void:
 
 func _on_stand_pressed() -> void:
 	player_area.clear_preview()
+
+	if deck.has_reservation:
+		deck.release_reservation()
+
 	opponent_area.reveal_all()
 
 	player_area.show_result()
@@ -420,7 +471,6 @@ func _on_stand_pressed() -> void:
 
 	round_active = true
 
-	play_button.text = "Next round"
 	_set_button_disabled(play_button, false)
 
 
@@ -483,7 +533,6 @@ func resolve_combat() -> Dictionary:
 	var ignore_defense: bool = false
 
 	if player_score == opponent_score:
-		# Stronger wins any tie outright, regardless of card count.
 		if player_character.has_ability("stronger"):
 			winner = "player"
 			winner_score = player_score
@@ -649,21 +698,25 @@ func _on_character_defeated() -> void:
 	var opponent_alive: bool = opponent_character.is_alive()
 
 	if not player_alive and not opponent_alive:
-		end_menu.show_result("Double KO - Draw", false)
+		end_menu.show_result("Double KO - Draw", false, false, "neutral")
 
 	elif not player_alive:
-		end_menu.show_result("GAME OVER - You lost", false)
+		end_menu.show_result("GAME OVER - You lost", false, false, "lose")
 
 	else:
 		if current_fight < MAX_FIGHTS:
 			end_menu.show_result(
 				"Fight %d won!" % current_fight,
-				true
+				true,
+				false,
+				"win"
 			)
 		else:
 			end_menu.show_result(
 				"VICTORY! You won the match",
-				false
+				false,
+				false,
+				"win"
 			)
 
 
@@ -738,21 +791,23 @@ func _start_new_fight() -> void:
 	opponent_character.reset_sum_streak()
 	opponent_character.reset_round_state()
 
-	if deck.has_method("reset_deck"):
-		deck.reset_deck()
+	deck.reset_deck()
 	_update_deck_label(deck.cards_remaining())
 
 	combat_over = false
 	_reset_round()
 
+	SoundManager.start_fight_music()
+
 
 func _reset_round() -> void:
+	if deck.has_reservation:
+		deck.release_reservation()
+
 	player_area.reset()
 	opponent_area.reset()
 
 	round_active = false
-
-	play_button.text = "Play"
 
 	_set_button_disabled(play_button, false)
 	_set_button_disabled(hit_button, true)

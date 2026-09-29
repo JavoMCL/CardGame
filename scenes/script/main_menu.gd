@@ -16,6 +16,9 @@ var cards: Array[Node2D] = []
 
 func _ready() -> void:
 	randomize()
+	_setup_texture_button_masks()
+	_connect_click_sounds()
+
 	var screen_size := get_viewport_rect().size
 
 	for i in CARD_COUNT:
@@ -38,11 +41,37 @@ func _ready() -> void:
 		radii.append(_get_card_radius(card))
 		cards.append(card)
 
+	SoundManager.start_fight_music()
+
+
+func _setup_texture_button_masks() -> void:
+	var buttons := find_children("*", "TextureButton", true, false)
+
+	for button in buttons:
+		var texture_button := button as TextureButton
+
+		if texture_button.texture_normal:
+			var bitmap := BitMap.new()
+			bitmap.create_from_image_alpha(texture_button.texture_normal.get_image())
+			texture_button.texture_click_mask = bitmap
+
+
+func _connect_click_sounds() -> void:
+	var buttons := find_children("*", "TextureButton", true, false)
+
+	for node in buttons:
+		var button := node as TextureButton
+		if button:
+			button.pressed.connect(_play_click_sound)
+
+
+func _play_click_sound() -> void:
+	SoundManager.play_click()
+
 
 func _process(delta: float) -> void:
 	var screen_size := get_viewport_rect().size
 
-	# mover y rebotar contra bordes de pantalla
 	for i in cards.size():
 		var card := cards[i]
 		card.position += velocities[i] * delta
@@ -55,7 +84,6 @@ func _process(delta: float) -> void:
 			velocities[i].y *= -1
 			card.position.y = clamp(card.position.y, radii[i], screen_size.y - radii[i])
 
-	# rebote simple entre cartas
 	for i in cards.size():
 		for j in range(i + 1, cards.size()):
 			var a := cards[i]
@@ -74,14 +102,17 @@ func _process(delta: float) -> void:
 
 func _get_card_radius(card: Node) -> float:
 	var shape_node := card.get_node("CollisionShape2D") as CollisionShape2D
+
 	if shape_node == null or shape_node.shape == null:
 		return 32.0
 
 	var shape := shape_node.shape
+
 	if shape is CircleShape2D:
 		return shape.radius
 	elif shape is RectangleShape2D:
 		return shape.size.length() / 2.0
+
 	return 32.0
 
 
@@ -94,4 +125,4 @@ func _on_play_pressed() -> void:
 
 
 func _on_credits_pressed() -> void:
-	pass # Replace with function body.
+	get_tree().change_scene_to_file("res://scenes/credits.tscn")
